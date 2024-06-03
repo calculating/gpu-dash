@@ -6,8 +6,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
-            background-color: #121212;
-            color: #ffffff;
+            background-color: #737373;
+            color: #242424;
             font-family: Arial, sans-serif;
         }
         .vertical-text {
@@ -109,14 +109,11 @@
                                 callback: function(value, index, values) {
                                     return value + ' W';
                                 },
-                                color: 'white',
+                                color: 'yellow',
                                 stepSize: 700,
                                 display: gpu_id.slice(-1) == '7',
                                 min: 0,
                                 max: 700,
-                            },
-                            grid: {
-                                color: 'white'
                             },
                         },
                         y_memory: {
@@ -128,14 +125,11 @@
                                 callback: function(value, index, values) {
                                     return value + ' GiB';
                                 },
-                                color: 'white',
+                                color: 'blue',
                                 stepSize: 82,
                                 display: gpu_id.slice(-1) == '7',
                                 min: 0,
                                 max: 82,
-                            },
-                            grid: {
-                                color: 'white'
                             },
                         },
                         x: {

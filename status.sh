@@ -12,7 +12,7 @@ post_data() {
     GPU_MEM="$3"
 
     # Send data to the Flask server
-    curl -X POST https://nel.ag/api/log \
+    curl -X POST https://REDACTED/api/log \
         -H "Content-Type: application/json" \
         -d "{\"gpu_id\": \"$GPU_ID\", \"gpu_watts\": $GPU_WATTS, \"gpu_mem\": $GPU_MEM}"
 }
