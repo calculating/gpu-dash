@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GPU Status Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>GPU Status Dashboard</h1>
+    <canvas id="wattageChart" width="400" height="200"></canvas>
+    <canvas id="memoryChart" width="400" height="200"></canvas>
+
+    <script>
+        async function fetchData() {
+            const response = await fetch('/api/data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    start_timestamp: new Date(Date.now() - 3600 * 1000).toISOString().slice(0, 19).replace('T', ' ')
+                })
+            });
+            return await response.json();
+        }
+
+        function createChart(ctx, label, data, yMax) {
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => d.timestamp),
+                    datasets: [{
+                        label: label,
+                        data: data.map(d => d.value),
+                        borderColor: 'blue',
+                        borderWidth: 1,
+                        pointBackgroundColor: data.map(d => d.value === null ? 'red' : 'blue')
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: yMax
+                        }
+                    }
+                }
+            });
+        }
+
+        async function loadCharts() {
+            const data = await fetchData();
+            const wattageData = [];
+            const memoryData = [];
+            for (const [gpu_id, logs] of Object.entries(data)) {
+                logs.forEach(log => {
+                    wattageData.push({ timestamp: log.timestamp, value: log.gpu_watts });
+                    memoryData.push({ timestamp: log.timestamp, value: log.gpu_mem });
+                });
+            }
+            const wattageCtx = document.getElementById('wattageChart').getContext('2d');
+            createChart(wattageCtx, 'GPU Wattage', wattageData, 700);
+
+            const memoryCtx = document.getElementById('memoryChart').getContext('2d');
+            createChart(memoryCtx, 'GPU Memory', memoryData, 81559);
+        }
+
+        window.onload = loadCharts;
+    </script>
+</body>
+</html>
