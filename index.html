@@ -4,44 +4,165 @@
     <meta charset="UTF-8">
     <title>GPU Status Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+        }
+        .vertical-text {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            font-size: 18px;
+            margin-right: 10px;
+        }
+        .chart-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            margin-bottom: 20px;
+        }
+        .chart-container {
+            /* flex: 1; */
+            /* min-width: calc(100% / 8 - 40px); */
+            /* max-width: calc(100% / 8 - 40px); */
+            flex: 0 0 calc(100% / 8 - 40px);
+            margin: 5px;
+        }
+        .chart-container.last-chart {
+            flex: 0 0 calc(100% / 6 - 40px); /* Adjust the width as needed */
+        }
+        .error-message {
+            color: red;
+            font-weight: bold;
+        }
+        canvas {
+            max-width: 100%;
+            height: 200px;
+        }
+        h2 {
+            color: #ffffff;
+        }
+    </style>
 </head>
 <body>
     <h1>GPU Status Dashboard</h1>
-    <canvas id="wattageChart" width="400" height="200"></canvas>
-    <canvas id="memoryChart" width="400" height="200"></canvas>
+    <div id="charts"></div>
+    <div id="error-message" class="error-message"></div>
 
     <script>
         async function fetchData() {
-            const response = await fetch('/api/data', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    start_timestamp: new Date(Date.now() - 3600 * 1000).toISOString().slice(0, 19).replace('T', ' ')
-                })
-            });
-            return await response.json();
+            try {
+                const response = await fetch('/api/data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        start_timestamp: new Date(Date.now() - 3600 * 1000).toISOString().slice(0, 19).replace('T', ' ')
+                    })
+                });
+                if (!response.ok) throw new Error('Network response was not ok');
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                document.getElementById('error-message').textContent = 'Error fetching data: ' + error.message;
+            }
         }
 
-        function createChart(ctx, label, data, yMax) {
+        function createChart(ctx, gpu_id, wattageData, memoryData) {
             return new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: data.map(d => d.timestamp),
-                    datasets: [{
-                        label: label,
-                        data: data.map(d => d.value),
-                        borderColor: 'blue',
-                        borderWidth: 1,
-                        pointBackgroundColor: data.map(d => d.value === null ? 'red' : 'blue')
-                    }]
+                    labels: wattageData.map(d => d.timestamp),
+                    datasets: [
+                        {
+                            label: 'Wattage',
+                            data: wattageData.map(d => d.value),
+                            borderColor: 'yellow',
+                            borderWidth: 1,
+                            pointBackgroundColor: wattageData.map(d => d.value === null ? 'red' : 'yellow'),
+                            spanGaps: true,
+                            yAxisID: 'y_wattage'
+                        },
+                        {
+                            label: 'Memory (GiB)',
+                            data: memoryData.map(d => d.value / 1000),
+                            borderColor: 'blue',
+                            borderWidth: 1,
+                            pointBackgroundColor: memoryData.map(d => d.value === null ? 'red' : 'blue'),
+                            spanGaps: true,
+                            yAxisID: 'y_memory'
+                        }
+                    ]
                 },
                 options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
                     scales: {
-                        y: {
+                        y_wattage: {
+                            type: 'linear',
+                            position: 'right',
                             beginAtZero: true,
-                            max: yMax
+                            suggestedMax: 700,
+                            ticks: {
+                                callback: function(value, index, values) {
+                                    return value + ' W';
+                                },
+                                color: 'white',
+                                stepSize: 700,
+                                display: gpu_id.slice(-1) == '7',
+                                min: 0,
+                                max: 700,
+                            },
+                            grid: {
+                                color: 'white'
+                            },
+                        },
+                        y_memory: {
+                            type: 'linear',
+                            position: 'right',
+                            beginAtZero: true,
+                            suggestedMax: 82,
+                            ticks: {
+                                callback: function(value, index, values) {
+                                    return value + ' GiB';
+                                },
+                                color: 'white',
+                                stepSize: 82,
+                                display: gpu_id.slice(-1) == '7',
+                                min: 0,
+                                max: 82,
+                            },
+                            grid: {
+                                color: 'white'
+                            },
+                        },
+                        x: {
+                            display: false,
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false  // Hide legend to reduce clutter
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += context.raw + (context.dataset.label === 'Memory (GiB)' ? ' GiB' : 'W');
+                                    return label;
+                                },
+                                afterLabel: function(context) {
+                                    return 'Timestamp: ' + context.label;
+                                },
+                                title: function(tooltipItems) {
+                                    return gpu_id;
+                                }
+                            }
                         }
                     }
                 }
@@ -50,19 +171,56 @@
 
         async function loadCharts() {
             const data = await fetchData();
-            const wattageData = [];
-            const memoryData = [];
-            for (const [gpu_id, logs] of Object.entries(data)) {
-                logs.forEach(log => {
-                    wattageData.push({ timestamp: log.timestamp, value: log.gpu_watts });
-                    memoryData.push({ timestamp: log.timestamp, value: log.gpu_mem });
-                });
-            }
-            const wattageCtx = document.getElementById('wattageChart').getContext('2d');
-            createChart(wattageCtx, 'GPU Wattage', wattageData, 700);
+            if (!data) return;
 
-            const memoryCtx = document.getElementById('memoryChart').getContext('2d');
-            createChart(memoryCtx, 'GPU Memory', memoryData, 81559);
+            const chartsContainer = document.getElementById('charts');
+            chartsContainer.innerHTML = '';
+            document.getElementById('error-message').textContent = '';
+
+            const groupedData = {};
+            for (const [gpu_id, logs] of Object.entries(data)) {
+                const hostname = gpu_id.split('_')[0];
+                if (!groupedData[hostname]) {
+                    groupedData[hostname] = [];
+                }
+                groupedData[hostname].push({ gpu_id, logs });
+            }
+
+            for (const [hostname, gpus] of Object.entries(groupedData)) {
+                // const title = document.createElement('h2');
+                // title.textContent = hostname;
+                // chartsContainer.appendChild(title);
+
+                const row = document.createElement('div');
+                row.className = 'chart-row';
+                chartsContainer.appendChild(row);
+
+                const hostnameLabel = document.createElement('div');
+                hostnameLabel.className = 'vertical-text';
+                hostnameLabel.textContent = hostname;
+                row.appendChild(hostnameLabel);
+
+                // Sort GPUs by their ID to maintain the order 0, 1, ..., 6, 7
+                gpus.sort((a, b) => parseInt(a.gpu_id.split('_')[1].replace('gpu', '')) - parseInt(b.gpu_id.split('_')[1].replace('gpu', '')));
+
+                for (const { gpu_id, logs } of gpus) {
+                    const wattageData = logs.map(log => ({
+                        timestamp: log.timestamp,
+                        value: log.gpu_watts
+                    }));
+                    const memoryData = logs.map(log => ({
+                        timestamp: log.timestamp,
+                        value: log.gpu_mem
+                    }));
+
+                    const chartContainer = document.createElement('div');
+                    chartContainer.className = 'chart-container' + (gpu_id.slice(-1) == '7' ? ' last-chart' : '');
+                    const canvas = document.createElement('canvas');
+                    chartContainer.appendChild(canvas);
+                    row.appendChild(chartContainer);
+                    createChart(canvas.getContext('2d'), gpu_id, wattageData, memoryData);
+                }
+            }
         }
 
         window.onload = loadCharts;
