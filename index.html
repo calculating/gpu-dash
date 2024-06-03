@@ -104,32 +104,32 @@
                             type: 'linear',
                             position: 'right',
                             beginAtZero: true,
-                            suggestedMax: 700,
+                            suggestedMax: 750,
                             ticks: {
                                 callback: function(value, index, values) {
                                     return value + ' W';
                                 },
                                 color: 'yellow',
-                                stepSize: 700,
+                                stepSize: 750,
                                 display: gpu_id.slice(-1) == '7',
                                 min: 0,
-                                max: 700,
+                                max: 750,
                             },
                         },
                         y_memory: {
                             type: 'linear',
                             position: 'right',
                             beginAtZero: true,
-                            suggestedMax: 82,
+                            suggestedMax: 85,
                             ticks: {
                                 callback: function(value, index, values) {
                                     return value + ' GiB';
                                 },
                                 color: 'blue',
-                                stepSize: 82,
+                                stepSize: 85,
                                 display: gpu_id.slice(-1) == '7',
                                 min: 0,
-                                max: 82,
+                                max: 85,
                             },
                         },
                         x: {
