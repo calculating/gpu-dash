@@ -6,15 +6,24 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
-            background-color: #737373;
-            color: #242424;
-            font-family: Arial, sans-serif;
+            background-color: black;
+            color: #00ffd9;
+            font-family: 'Courier New', Courier, monospace;
+            text-shadow: 0 0 5px #00ffd9, 0 0 10px #00ffd9, 0 0 15px #00ffd9;
+            overflow: auto;
+            height: 100vh;
+            margin: 0;
+        }
+        h1, h2 {
+            color: #ff00ff;
+            text-align: center;
         }
         .vertical-text {
             writing-mode: vertical-rl;
             transform: rotate(180deg);
             font-size: 18px;
             margin-right: 10px;
+            color: #ff00ff;
         }
         .chart-row {
             display: flex;
@@ -23,32 +32,133 @@
             margin-bottom: 20px;
         }
         .chart-container {
-            /* flex: 1; */
-            /* min-width: calc(100% / 8 - 40px); */
-            /* max-width: calc(100% / 8 - 40px); */
             flex: 0 0 calc(100% / 8 - 40px);
             margin: 5px;
+            border: 1px solid #00ffd9;
+            box-shadow: 0 0 10px #00ffd9;
+            position: relative; /* Added */
+            overflow: hidden; /* Added */
         }
         .chart-container.last-chart {
-            flex: 0 0 calc(100% / 6 - 40px); /* Adjust the width as needed */
+            flex: 0 0 calc(100% / 6 - 40px);
         }
         .error-message {
-            color: red;
+            color: #ff0040;
             font-weight: bold;
+            text-align: center;
         }
         canvas {
             max-width: 100%;
             height: 200px;
         }
-        h2 {
-            color: #ffffff;
+        .neon-button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            border: none;
+            background: linear-gradient(45deg, #ff00ff, #00ffd9);
+            color: white;
+            text-transform: uppercase;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 0 10px #ff00ff, 0 0 20px #00ffd9, 0 0 30px #ff00ff;
+        }
+        .star-field {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            overflow: hidden;
+            z-index: -1;
+        }
+        .star {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: white;
+            opacity: 0;
+            animation: twinkle 5s infinite, moveDown 10s linear infinite;
+            box-shadow: 0 0 5px white, 0 0 10px white, 0 0 15px white;
+        }
+        @keyframes twinkle {
+            0%, 100% {
+                opacity: 0.3;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+        @keyframes moveDown {
+            0% {
+                transform: translateY(0);
+            }
+            100% {
+                transform: translateY(100vh);
+            }
+        }
+        .blip {
+            position: absolute;
+            width: 20px; /* Increased size */
+            height: 20px; /* Increased size */
+            border-radius: 50%;
+            background-color: rgba(255, 0, 255, 0.7);
+            animation: blipAnimation 1.5s linear infinite;
+            box-shadow: 0 0 10px rgba(255, 0, 255, 1), 0 0 20px rgba(255, 0, 255, 1); /* Increased glow */
+        }
+        @keyframes blipAnimation {
+            0% {
+                transform: scale(0.5);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(3);
+                opacity: 0;
+            }
+        }
+        .matrix {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: -1; /* Behind chart content */
+        }
+        .matrix div {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            animation: matrix 20s linear infinite;
+            opacity: 0.5;
+        }
+        @keyframes matrix {
+            0% {
+                transform: translateY(-100%);
+            }
+            100% {
+                transform: translateY(100%);
+            }
+        }
+        .matrix span {
+            color: #00ff00;
+            font-family: monospace;
+            font-size: 12px;
+            display: block;
+            white-space: nowrap;
         }
     </style>
 </head>
 <body>
+    <div class="star-field"></div>
     <h1>GPU Status Dashboard</h1>
     <div id="charts"></div>
     <div id="error-message" class="error-message"></div>
+
+    <button class="neon-button" onclick="loadCharts()">Refresh Data</button>
 
     <script>
         async function fetchData() {
@@ -71,7 +181,7 @@
         }
 
         function createChart(ctx, gpu_id, wattageData, memoryData) {
-            return new Chart(ctx, {
+            const chart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: wattageData.map(d => d.timestamp),
@@ -79,18 +189,18 @@
                         {
                             label: 'Wattage',
                             data: wattageData.map(d => d.value),
-                            borderColor: 'yellow',
+                            borderColor: '#00ffd9',
                             borderWidth: 1,
-                            pointBackgroundColor: wattageData.map(d => d.value === null ? 'red' : 'yellow'),
+                            pointBackgroundColor: wattageData.map(d => d.value === null ? '#ff0040' : '#00ffd9'),
                             spanGaps: true,
                             yAxisID: 'y_wattage'
                         },
                         {
                             label: 'Memory (GiB)',
                             data: memoryData.map(d => d.value / 1000),
-                            borderColor: 'blue',
+                            borderColor: '#ff00ff',
                             borderWidth: 1,
-                            pointBackgroundColor: memoryData.map(d => d.value === null ? 'red' : 'blue'),
+                            pointBackgroundColor: memoryData.map(d => d.value === null ? '#ff0040' : '#ff00ff'),
                             spanGaps: true,
                             yAxisID: 'y_memory'
                         }
@@ -109,7 +219,7 @@
                                 callback: function(value, index, values) {
                                     return value + ' W';
                                 },
-                                color: 'yellow',
+                                color: '#00ffd9',
                                 stepSize: 750,
                                 display: gpu_id.slice(-1) == '7',
                                 min: 0,
@@ -125,7 +235,7 @@
                                 callback: function(value, index, values) {
                                     return value + ' GiB';
                                 },
-                                color: 'blue',
+                                color: '#ff00ff',
                                 stepSize: 85,
                                 display: gpu_id.slice(-1) == '7',
                                 min: 0,
@@ -138,7 +248,7 @@
                     },
                     plugins: {
                         legend: {
-                            display: false  // Hide legend to reduce clutter
+                            display: false
                         },
                         tooltip: {
                             callbacks: {
@@ -147,7 +257,7 @@
                                     if (label) {
                                         label += ': ';
                                     }
-                                    label += context.raw + (context.dataset.label === 'Memory (GiB)' ? ' GiB' : 'W');
+                                    label += context.raw + (context.dataset.label === 'Memory (GiB)' ? ' GiB' : ' W');
                                     return label;
                                 },
                                 afterLabel: function(context) {
@@ -161,6 +271,20 @@
                     }
                 }
             });
+            createBlip(ctx.canvas, chart, gpu_id);
+            return chart;
+        }
+
+        function createBlip(canvas, chart, gpu_id) {
+            const chartContainer = canvas.parentNode;
+            const lastDataPoint = chart.data.datasets[0].data.length - 1;
+            if (lastDataPoint >= 0) {
+                const blip = document.createElement('div');
+                blip.className = 'blip';
+                blip.style.left = `${chart.scales.x.getPixelForValue(lastDataPoint) - 10}px`;
+                blip.style.top = `${chart.scales.y_wattage.getPixelForValue(chart.data.datasets[0].data[lastDataPoint]) - 10}px`;
+                chartContainer.appendChild(blip);
+            }
         }
 
         async function loadCharts() {
@@ -181,10 +305,6 @@
             }
 
             for (const [hostname, gpus] of Object.entries(groupedData)) {
-                // const title = document.createElement('h2');
-                // title.textContent = hostname;
-                // chartsContainer.appendChild(title);
-
                 const row = document.createElement('div');
                 row.className = 'chart-row';
                 chartsContainer.appendChild(row);
@@ -194,7 +314,6 @@
                 hostnameLabel.textContent = hostname;
                 row.appendChild(hostnameLabel);
 
-                // Sort GPUs by their ID to maintain the order 0, 1, ..., 6, 7
                 gpus.sort((a, b) => parseInt(a.gpu_id.split('_')[1].replace('gpu', '')) - parseInt(b.gpu_id.split('_')[1].replace('gpu', '')));
 
                 for (const { gpu_id, logs } of gpus) {
@@ -213,11 +332,47 @@
                     chartContainer.appendChild(canvas);
                     row.appendChild(chartContainer);
                     createChart(canvas.getContext('2d'), gpu_id, wattageData, memoryData);
+
+                    // Add Matrix effect
+                    const matrix = document.createElement('div');
+                    matrix.className = 'matrix';
+                    chartContainer.appendChild(matrix);
+                    createMatrixEffect(matrix);
                 }
             }
         }
 
-        window.onload = loadCharts;
+        function createStars() {
+            const starField = document.querySelector('.star-field');
+            const starCount = 200;
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.top = `${Math.random() * 100}%`;
+                star.style.animationDelay = `${Math.random() * 5}s`;
+                starField.appendChild(star);
+            }
+        }
+
+        function createMatrixEffect(container) {
+            const matrixDiv = document.createElement('div');
+            const spanCount = 50;  // Reduced number of spans to reduce CPU load
+            for (let i = 0; i < spanCount; i++) {
+                const span = document.createElement('span');
+                span.textContent = Math.random() > 0.5 ? '1' : '0';
+                span.style.top = `${Math.random() * 100}%`;
+                span.style.left = `${Math.random() * 100}%`;
+                span.style.animationDelay = `${Math.random() * 10}s`;  // Staggered animation start
+                matrixDiv.appendChild(span);
+            }
+            container.appendChild(matrixDiv);
+        }
+
+        window.onload = () => {
+            createStars();
+            loadCharts();
+        };
     </script>
 </body>
 </html>
