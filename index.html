@@ -63,99 +63,105 @@
             cursor: pointer;
             box-shadow: 0 0 10px #ff00ff, 0 0 20px #00ffd9, 0 0 30px #ff00ff;
         }
-        .star-field {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: transparent;
-            overflow: hidden;
-            z-index: -1;
+
+        /* Stars 
+        ------------------------------------- */
+
+        #space, .stars {
+        overflow: hidden;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
         }
-        .star {
-            position: absolute;
-            width: 3px;
-            height: 3px;
-            background: white;
+
+        .stars {
+        background-image: 
+            radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)),
+            radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+            radial-gradient(2px 2px at 50px 160px, #ddd, rgba(0,0,0,0)),
+            radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+            radial-gradient(2px 2px at 130px 80px, #fff, rgba(0,0,0,0)),
+            radial-gradient(2px 2px at 160px 120px, #ddd, rgba(0,0,0,0));
+        background-repeat: repeat;
+        background-size: 200px 200px;
+        animation: zoom 5s infinite;
+        opacity: 0;
+        }
+
+        .stars:nth-child(1) {
+        background-position: 50% 50%;
+        animation-delay: 0s;
+        }
+        .stars:nth-child(2) {
+        background-position: 20% 60%;
+        animation-delay: 1s;
+        }
+        .stars:nth-child(3) {
+        background-position: -20% -30%;
+        animation-delay: 2s;
+        }
+        .stars:nth-child(4) {
+        background-position: 40% -80%;
+        animation-delay: 3s;
+        }
+        .stars:nth-child(5) {
+        background-position: -20% 30%;
+        animation-delay: 4s;
+        }
+
+        @keyframes zoom {
+        0% {
             opacity: 0;
-            animation: twinkle 5s infinite, moveDown 10s linear infinite;
-            box-shadow: 0 0 5px white, 0 0 10px white, 0 0 15px white;
+            transform: scale(0.5);
+            animation-timing-function: ease-in;
+        } 
+        85% {
+            opacity: 1;
+            transform: scale(2.8);
+            animation-timing-function: linear;
         }
-        @keyframes twinkle {
-            0%, 100% {
-                opacity: 0.3;
-            }
-            50% {
-                opacity: 1;
-            }
+        100% {
+            opacity: 0;
+            transform: scale(3.5);
         }
-        @keyframes moveDown {
-            0% {
-                transform: translateY(0);
-            }
-            100% {
-                transform: translateY(100vh);
-            }
         }
+
         .blip {
             position: absolute;
             width: 20px;
             height: 20px;
             border-radius: 50%;
             background-color: rgba(255, 0, 255, 0.7);
-            animation: blipAnimation 1.5s linear infinite;
+            animation: blipAnimation 6s linear infinite;
             box-shadow: 0 0 10px rgba(255, 0, 255, 1), 0 0 20px rgba(255, 0, 255, 1);
         }
         @keyframes blipAnimation {
             0% {
-                transform: scale(0.5);
+                transform: scale(0.2);
                 opacity: 1;
             }
+            25% {
+                transform: scale(2);
+                opacity: 0;
+            }
             100% {
-                transform: scale(3);
+                transform: scale(2);
                 opacity: 0;
             }
         }
-        /* .matrix {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: black;
-            overflow: hidden;
-            pointer-events: none;
-            z-index: -1;
-        }
-        .matrix div {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            animation: matrix 30s linear infinite;
-            opacity: 0.5;
-            will-change: transform, opacity;
-        }
-        @keyframes matrix {
-            0% {
-                transform: translateY(-100%);
-            }
-            100% {
-                transform: translateY(100%);
-            }
-        }
-        .matrix span {
-            color: #00ff00;
-            font-family: monospace;
-            font-size: 12px;
-            display: block;
-            white-space: nowrap;
-            will-change: transform, opacity;
-        } */
+
     </style>
 </head>
 <body>
-    <div class="star-field"></div>
+    <div id="space">
+        <div class="stars"></div>
+        <div class="stars"></div>
+        <div class="stars"></div>
+        <div class="stars"></div>
+        <div class="stars"></div>
+    </div>
     <h1>GPU Status Dashboard</h1>
     <div id="charts"></div>
     <div id="error-message" class="error-message"></div>
@@ -216,16 +222,16 @@
                             type: 'linear',
                             position: 'right',
                             beginAtZero: true,
-                            suggestedMax: 750,
+                            suggestedMax: 700,
                             ticks: {
                                 callback: function(value, index, values) {
                                     return value + ' W';
                                 },
                                 color: '#00ffd9',
-                                stepSize: 750,
+                                stepSize: 700,
                                 display: gpu_id.slice(-1) == '7',
                                 min: 0,
-                                max: 750,
+                                max: 700,
                             },
                         },
                         y_memory: {
@@ -335,45 +341,31 @@
                     row.appendChild(chartContainer);
                     createChart(canvas.getContext('2d'), gpu_id, wattageData, memoryData);
 
-                    // Add Matrix effect
-                    // const matrix = document.createElement('div');
-                    // matrix.className = 'matrix';
-                    // chartContainer.appendChild(matrix);
-                    // createMatrixEffect(matrix);
                 }
             }
         }
 
-        function createStars() {
-            const starField = document.querySelector('.star-field');
-            const starCount = 200;
-            for (let i = 0; i < starCount; i++) {
-                const star = document.createElement('div');
-                star.className = 'star';
-                star.style.left = `${Math.random() * 100}%`;
-                star.style.top = `${Math.random() * 100}%`;
-                star.style.animationDelay = `${Math.random() * 5}s`;
-                starField.appendChild(star);
-            }
+        function stars() {
+            let e = document.createElement("div");
+            e.setAttribute("class", "star");
+            document.body.appendChild(e);
+            e.style.left = Math.random() * +innerWidth + "px";
+
+            let size = Math.random() * 12;
+            let duration = Math.random() * 3;
+
+            e.style.fontSize = 12 + "px";
+            e.style.animationDuration = 2 + duration + "s";
+            setTimeout(function () {
+                document.body.removeChild(e);
+            }, 5000);
         }
 
-        // function createMatrixEffect(container) {
-        //     const matrixDiv = document.createElement('div');
-        //     const spanCount = 30;  // Further reduced number of spans to reduce CPU load
-        //     for (let i = 0; i < spanCount; i++) {
-        //         const span = document.createElement('span');
-        //         span.textContent = Math.random() > 0.5 ? '1' : '0';
-        //         span.style.top = `${Math.random() * 100}%`;
-        //         span.style.left = `${Math.random() * 100}%`;
-        //         span.style.animationDelay = `${Math.random() * 20}s`;  // Further staggered animation start
-        //         matrixDiv.appendChild(span);
-        //     }
-        //     container.appendChild(matrixDiv);
-        // }
-
         window.onload = () => {
-            createStars();
             loadCharts();
+            setInterval(function () {
+                stars();
+            }, 50);
         };
     </script>
 </body>
